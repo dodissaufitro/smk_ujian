@@ -1,11 +1,14 @@
 <?php
 
 //konfigurasi server database
-$host = '192.168.110.135';
-$user = 'candy294';
-$pass = 'SxBsaje88w5P85s6';
+// $host = 'localhost';
+// $user = 'candy294';
+// $pass = 'SxBsaje88w5P85s6';
+// $debe = 'candy294';
+$host = 'localhost';
+$user = 'root';
+$pass = '';
 $debe = 'candy294';
-
 
 $koneksi = mysqli_connect($host, $user, $pass, "");
 if ($koneksi) {

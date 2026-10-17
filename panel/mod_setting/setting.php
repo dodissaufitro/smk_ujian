@@ -267,7 +267,7 @@ $setting['header'] = str_replace('<br />', '', $setting['header']);
                                             <label for="mapel" class="col-sm-2">Mapel yang Tersedia</label>
                                             <div class="col-sm-10">
                                                 <select name="mapel_id" id="mapel_id" class="form-control select2" style="width: 100%;" required>
-                                                    <?php $mapelbackup = mysqli_query($koneksi, "SELECT id_mapel,kode FROM mapel  GROUP BY id_mapel ASC"); ?>
+                                                    <?php $mapelbackup = mysqli_query($koneksi, "SELECT id_mapel,kode FROM mapel GROUP BY id_mapel ORDER BY id_mapel ASC"); ?>
                                                     <?php while ($mapelb = mysqli_fetch_array($mapelbackup)) : ?>
                                                         <option value="<?= $mapelb['id_mapel']  ?>"><?= $mapelb['kode'] ?></option>
                                                     <?php endwhile ?>
