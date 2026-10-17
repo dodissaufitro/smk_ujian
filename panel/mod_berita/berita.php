@@ -47,7 +47,7 @@ defined('APLIKASI') or exit('Anda tidak dizinkan mengakses langsung script ini!'
                                             <label>Sesi</label>
                                             <select class="form-control" id="bcsesi" name="sesi" required>
                                                 <option>Sesi</option>
-                                                <?php $sesi = mysqli_query($koneksi, "select * from siswa group by sesi"); ?>
+                                                <?php $sesi = mysqli_query($koneksi, "SELECT DISTINCT sesi FROM siswa WHERE sesi <> ''"); ?>
                                                 <?php while ($ses = mysqli_fetch_array($sesi)) : ?>
                                                     <option value="<?= $ses['sesi'] ?>"><?= $ses['sesi'] ?></option>
                                                 <?php endwhile; ?>

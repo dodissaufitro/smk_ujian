@@ -3,7 +3,7 @@ require("../../config/config.default.php");
 (isset($_SESSION['id_pengawas'])) ? $id_pengawas = $_SESSION['id_pengawas'] : $id_pengawas = 0;
 ($id_pengawas == 0) ? header('location:login.php') : null;
 
-function &backup_tables($host, $user, $pass, $name, $tables = '*')
+function backup_tables($host, $user, $pass, $name, $tables = '*')
 {
 
 	$data = "\n/*---------------------------------------------------------------" .

@@ -137,19 +137,25 @@ if ($pg == 'setting_restore') {
             $templine    = array();
 
             if (move_uploaded_file($tmp_file, $alamatfile)) {
+                mysqli_query($koneksi, "SET sql_mode = ''");
+                mysqli_query($koneksi, "SET FOREIGN_KEY_CHECKS = 0");
 
                 $templine    = '';
-
                 $lines    = file($alamatfile);
 
                 foreach ($lines as $line) {
-                    if (substr($line, 0, 2) == '--' || $line == '')
+                    $trimmed = trim($line);
+                    if (substr($trimmed, 0, 2) == '--' || substr($trimmed, 0, 2) == '/*' || substr($trimmed, 0, 1) == '#' || $trimmed == '')
                         continue;
 
                     $templine .= $line;
 
                     if (substr(trim($line), -1, 1) == ';') {
-                        mysqli_query($koneksi, $templine);
+                        try {
+                            mysqli_query($koneksi, $templine);
+                        } catch (Throwable $e) {
+                            // continue on non-fatal row warnings
+                        }
                         $templine = '';
                     }
                 }

@@ -3,22 +3,29 @@ defined('APLIKASI') or exit('Anda tidak dizinkan mengakses langsung script ini!'
 ?>
 <?php if ($ac == '') : ?>
 	<?php
-	$id_ujian = $_GET['id'];
+	$id_ujian = isset($_GET['id']) ? $_GET['id'] : 0;
 
 	$mapel = mysqli_fetch_array(mysqli_query($koneksi, "SELECT * FROM ujian WHERE id_ujian='$id_ujian'"));
-	$id_mapel = $mapel['id_mapel'];
-	$kelas = unserialize($mapel['kelas']);
-
-	$kelas = implode("','", $kelas);
-	$sqlkelas = "";
-	if (!$kelas == 'semua') {
-		$sqlkelas = "where id_kelas in ('" . $kelas . "')";
+	$id_mapel = isset($mapel['id_mapel']) ? $mapel['id_mapel'] : 0;
+	$kelas = (isset($mapel['kelas']) && $mapel['kelas'] != '') ? @unserialize($mapel['kelas']) : [];
+	if (!is_array($kelas)) {
+		$kelas = [];
 	}
 
-	$level = $mapel['level'];
-	$sqllevel = "";
-	if (!$level == 'semua') {
-		$sqlkelas = "and a.level='" . $level . "'";
+	$whereClauses = [];
+	if (!empty($kelas) && !in_array('semua', $kelas)) {
+		$escaped_kelas = array_map(function($k) use ($koneksi) { return mysqli_real_escape_string($koneksi, $k); }, $kelas);
+		$whereClauses[] = "id_kelas IN ('" . implode("','", $escaped_kelas) . "')";
+	}
+
+	$level = isset($mapel['level']) ? $mapel['level'] : '';
+	if (!empty($level) && $level != 'semua') {
+		$whereClauses[] = "level='" . mysqli_real_escape_string($koneksi, $level) . "'";
+	}
+
+	$whereSql = "";
+	if (!empty($whereClauses)) {
+		$whereSql = "WHERE " . implode(" AND ", $whereClauses);
 	}
 	?>
 	<div class='row'>
@@ -50,7 +57,7 @@ defined('APLIKASI') or exit('Anda tidak dizinkan mengakses langsung script ini!'
 								</tr>
 							</thead>
 							<tbody>
-								<?php $siswaQ = mysqli_query($koneksi, "SELECT * FROM siswa  " . $sqllevel . $sqlkelas); ?>
+								<?php $siswaQ = mysqli_query($koneksi, "SELECT * FROM siswa " . $whereSql); ?>
 								<?php while ($siswa = mysqli_fetch_array($siswaQ)) : ?>
 									<?php
 									$no++;
