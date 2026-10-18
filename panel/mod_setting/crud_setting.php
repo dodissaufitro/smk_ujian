@@ -122,50 +122,88 @@ if ($pg == 'setting_clear') {
     }
 }
 if ($pg == 'setting_restore') {
-    function restore($file)
-    {
-        require("../../config/config.database.php");
-        global $rest_dir;
-        $nama_file    = $file['name'];
-        $ukrn_file    = $file['size'];
-        $tmp_file    = $file['tmp_name'];
+    @set_time_limit(0);
+    @ini_set('memory_limit', '512M');
+    @ini_set('max_execution_time', '0');
 
-        if ($nama_file == "") {
-            echo "Fatal Error";
-        } else {
-            $alamatfile    = $rest_dir . $nama_file;
-            $templine    = array();
+    if (!isset($_FILES['datafile'])) {
+        echo "Tidak ada berkas yang diunggah.";
+        exit;
+    }
 
-            if (move_uploaded_file($tmp_file, $alamatfile)) {
-                mysqli_query($koneksi, "SET sql_mode = ''");
-                mysqli_query($koneksi, "SET FOREIGN_KEY_CHECKS = 0");
+    $file = $_FILES['datafile'];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE   => 'Ukuran file melebihi batas upload_max_filesize di konfigurasi PHP server.',
+            UPLOAD_ERR_FORM_SIZE  => 'Ukuran file melebihi batas form.',
+            UPLOAD_ERR_PARTIAL    => 'File hanya terunggah sebagian. Silakan ulangi kembali.',
+            UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang dipilih.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary server tidak ditemukan.',
+            UPLOAD_ERR_CANT_WRITE => 'Gagal menyimpan file ke disk server.',
+            UPLOAD_ERR_EXTENSION  => 'Ekstensi PHP membatalkan upload file.'
+        ];
+        $msg = $errorMessages[$file['error']] ?? 'Kode error unggah: ' . $file['error'];
+        echo "Gagal mengunggah file: " . $msg;
+        exit;
+    }
 
-                $templine    = '';
-                $lines    = file($alamatfile);
+    $nama_file = $file['name'];
+    $tmp_file  = $file['tmp_name'];
+    $ext = strtolower(pathinfo($nama_file, PATHINFO_EXTENSION));
 
-                foreach ($lines as $line) {
-                    $trimmed = trim($line);
-                    if (substr($trimmed, 0, 2) == '--' || substr($trimmed, 0, 2) == '/*' || substr($trimmed, 0, 1) == '#' || $trimmed == '')
-                        continue;
+    if ($ext !== 'sql') {
+        echo "Format file tidak didukung! Hanya file database berekstensi .sql yang diperbolehkan.";
+        exit;
+    }
 
-                    $templine .= $line;
+    require("../../config/config.database.php");
 
-                    if (substr(trim($line), -1, 1) == ';') {
-                        try {
-                            mysqli_query($koneksi, $templine);
-                        } catch (Throwable $e) {
-                            // continue on non-fatal row warnings
-                        }
-                        $templine = '';
-                    }
-                }
-            } else {
-                echo "Proses upload gagal, kode error = " . $file['error'];
+    // Simpan file sql sementara di direktori yang memiliki hak izin tulis
+    $uploadDir = is_writable(__DIR__) ? __DIR__ : sys_get_temp_dir();
+    $alamatfile = rtrim($uploadDir, '/\\') . '/restore_' . time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '', $nama_file);
+
+    if (!move_uploaded_file($tmp_file, $alamatfile)) {
+        echo "Gagal memindahkan file hasil upload ke folder sementara server.";
+        exit;
+    }
+
+    $handle = @fopen($alamatfile, "r");
+    if (!$handle) {
+        if (file_exists($alamatfile)) {
+            @unlink($alamatfile);
+        }
+        echo "Gagal membuka file database untuk diproses.";
+        exit;
+    }
+
+    mysqli_query($koneksi, "SET sql_mode = ''");
+    mysqli_query($koneksi, "SET FOREIGN_KEY_CHECKS = 0");
+
+    $templine = '';
+    while (($line = fgets($handle)) !== false) {
+        $trimmed = trim($line);
+        if ($trimmed === '' || substr($trimmed, 0, 2) === '--' || substr($trimmed, 0, 2) === '/*' || substr($trimmed, 0, 1) === '#') {
+            continue;
+        }
+
+        $templine .= $line;
+
+        if (substr($trimmed, -1) === ';') {
+            try {
+                mysqli_query($koneksi, $templine);
+            } catch (Throwable $e) {
+                // Lanjutkan jika ada warning atau baris query minor
             }
+            $templine = '';
         }
     }
-    restore($_FILES['datafile']);
-    if (isset($_FILES['datafile'])) {
-        echo "data berhasil di restore";
+    fclose($handle);
+
+    // Hapus file temporary SQL setelah restore selesai
+    if (file_exists($alamatfile)) {
+        @unlink($alamatfile);
     }
+
+    echo "ok";
+    exit;
 }

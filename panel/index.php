@@ -59,25 +59,24 @@ endif;
 	<script src='<?= $homeurl ?>/plugins/datatables/extensions/Select/js/select.bootstrap.min.js'></script>
 </head>
 
-<div class="modal fade" id="modalversidb" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">Kesalahan Versi Database</h5>
-			</div>
-			<div class="modal-body">
-				Mohon maaf versi database anda tidak sesuai dengan database versi ini
-				mohon gunakan versi terbaru !!
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" data-dismiss="modal">Oke Mengerti</button>
-
+<body class='hold-transition skin-green-light fixed <?= $sidebar ?>'>
+	<?php if ($setting['db_versi'] <> VERSI_DB) : ?>
+		<div class="modal fade" id="modalversidb" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Kesalahan Versi Database</h5>
+					</div>
+					<div class="modal-body">
+						Mohon maaf versi database anda tidak sesuai dengan database versi ini (Database: <?= $setting['db_versi'] ?>, Diperlukan: <?= VERSI_DB ?>). Mohon gunakan versi terbaru!
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-dismiss="modal">Oke Mengerti</button>
+					</div>
+				</div>
 			</div>
 		</div>
-	</div>
-</div>
-
-<body class='hold-transition skin-green-light fixed <?= $sidebar ?>'>
+	<?php endif; ?>
 	<div id='pesan'></div>
 	<div class='loader'></div>
 	<div class='wrapper'>

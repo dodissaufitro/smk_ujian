@@ -2,33 +2,46 @@
 session_start();
 error_reporting(0);
 (isset($_SESSION['id_user'])) ? $id_user = $_SESSION['id_user'] : $id_user = 0;
-//JIKA DIINSTAL DISUBDOMAIN HOSTING HAPUS BARIS DIBAWAH INI
-$uri = $_SERVER['REQUEST_URI'];
-$pageurl = explode("/", $uri);
-if ($uri == '/') {
-	$homeurl = "http://" . $_SERVER['HTTP_HOST'];
-	(isset($pageurl[1])) ? $pg = $pageurl[1] : $pg = '';
-	(isset($pageurl[2])) ? $ac = $pageurl[2] : $ac = '';
-	(isset($pageurl[3])) ? $id = $pageurl[3] : $id = 0;
-} else {
-	$homeurl = "http://" . $_SERVER['HTTP_HOST'] . "/" . $pageurl[1];
-	(isset($pageurl[2])) ? $pg = $pageurl[2] : $pg = '';
-	(isset($pageurl[3])) ? $ac = $pageurl[3] : $ac = '';
-	(isset($pageurl[4])) ? $id = $pageurl[4] : $id = 0;
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+	|| (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+	|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+	|| (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false);
+$protocol = $isHttps ? "https://" : "http://";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+// Deteksi direktori root proyek secara otomatis
+$docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'] ?? ''));
+$appRoot = str_replace('\\', '/', realpath(dirname(__DIR__)));
+
+$subDir = '';
+if ($docRoot && strpos($appRoot, $docRoot) === 0) {
+	$subDir = substr($appRoot, strlen($docRoot));
 }
-//HAPUS SAMPAI SINI
+$subDir = '/' . ltrim(rtrim($subDir, '/'), '/');
+if ($subDir === '/') {
+	$subDir = '';
+}
 
-//JIKA DIINSTAL DISUBDOMAIN HOSTING HAPUS TANDA // BARIS DIBAWAH INI
+// Fallback jika diakses via localhost/smk_ujian
+if ($subDir === '' && isset($_SERVER['REQUEST_URI'])) {
+	$projectName = basename($appRoot);
+	if (strpos($_SERVER['REQUEST_URI'], '/' . $projectName . '/') === 0 || $_SERVER['REQUEST_URI'] === '/' . $projectName) {
+		$subDir = '/' . $projectName;
+	}
+}
 
-//$uri = $_SERVER['REQUEST_URI'];
-//$pageurl = explode("/",$uri);
+$homeurl = $protocol . $host . $subDir;
 
-//$homeurl = "http://".$_SERVER['HTTP_HOST'];
-//(isset($pageurl[1])) ? $pg = $pageurl[1] : $pg = '';
-//(isset($pageurl[2])) ? $ac = $pageurl[2] : $ac = '';
-//(isset($pageurl[3])) ? $id = $pageurl[3] : $id = 0;
+// Parsing parameter routing ($pg, $ac, $id) secara dinamis
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+if ($subDir !== '' && strpos($requestPath, $subDir) === 0) {
+	$requestPath = substr($requestPath, strlen($subDir));
+}
+$segments = array_values(array_filter(explode('/', $requestPath), 'strlen'));
 
-//HAPUS SAMPAI BARIS DIATAS INI
+$pg = $segments[0] ?? '';
+$ac = $segments[1] ?? '';
+$id = $segments[2] ?? 0;
 
 require "config.database.php";
 
